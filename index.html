@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hello world</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    </head>
+    <body>
+    <div id="loginContainer">
+     <input id="login" value="userA">
+     <button onclick="user_login();">Enter Username</button>
+   </div>
+     <div id="callerIDContainer">
+          <input id="callerID" value="userB">
+          <button onclick="call_user();">Call User</button>
+     </div>
+    </body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      var socket = io();
+        let username;
+        let busy = false;
+        let incallwith = "";
+
+    function user_login(){
+            var login = document.getElementById('login').value;
+            username = login;
+      socket.emit('login',{
+                     type: "login",
+                     name: username,
+                     roomId: 'oluwafemi'
+                 })
+    }
+
+    function call_user(){
+        let callerID = document.getElementById('callerID').value;
+        if (callerID == "") {
+            alert('Please enter caller ID');
+          } else {    
+           
+        var callerIDContainer = document.getElementById('callerIDContainer');
+            callerIDContainer.parentElement.removeChild(callerIDContainer);
+                busy = true;
+                incallwith = callerID
+                socket.emit('call_user', {
+                 type: "call_user",
+                 name: callerID,
+                callername: username,
+                videoId: 'phemyvideoid'
+              })
+          }
+        }
+
+    socket.on('connect', function(data) {
+          console.log('connect');
+        });
+        //when a user logs in
+        socket.on('roommessage', function(message){
+            var data = message;
+ 
+            switch(data.type) {
+                 case "login":
+                        console.log("New user : "+data.username);
+                        break;
+                 case "disconnect":
+                   console.log("User disconnected : "+data.username);
+                 break;
+                default:
+                    break;
+            }
+        })
+
+    socket.on('login', function(data){
+
+             if (data.success === false) {
+                    alert("oops...try a different username");
+             } else {
+                 username = data.username;
+                 console.log("Login Successfull");
+                 console.log("logged in as :"+username);
+                 console.log(data.userlist);
+             }
+            })
+    socket.on('answer', (data)=> {
+        console.log('getting called by', data.callername)
+        if(busy == false){
+            busy = true
+            incallwith = data.callername
+            var res = confirm(data.callername+" is calling you");
+            if(res == true){
+                console.log("call accepted");
+                // code
+                    socket.emit('call_accepted', {
+                     type: "call_accepted",
+                     callername: data.callername,
+                     from: username
+                    })
+ 
+                    }else{
+                   console.log("call rejected");
+                    socket.emit('call_rejected',{
+                            type: "call_rejected",
+                            callername: data.callername,
+                            from: username
+                     })
+                     busy = false
+                     incallwith = ""
+                 }
+             }else{
+                 console.log("call busy");
+                 socket.emit('call_busy',{
+                            type: "call_busy",
+                            callername: data.callername,
+                            from: username
+                     })
+                     busy = false
+                     incallwith = ""
+ 
+             }
+
+    })
+
+    socket.on('call_response', (data) => {
+        switch(data.response){
+                    case "accepted":
+                    incallwith = data.responsefrom;
+                    console.log("Call accepted by :"+ data.responsefrom);
+                    // code
+                    break;
+                    case "rejected":
+                    console.log("Call rejected by :"+ data.responsefrom);
+                    busy = false;
+                    incallwith = ""
+                    break;
+                    case "busy":
+                    console.log(data.responsefrom+" call busy");
+                    busy = false;
+                    incallwith = ""
+                    break;
+                    default:
+                    console.log(data.responsefrom+" is offline");
+                    busy = false;
+                    incallwith = ""
+                }
+
+  })
+ 
+  </script>
+  </html>

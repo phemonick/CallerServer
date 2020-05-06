@@ -1,0 +1,15 @@
+{
+  "name": "CallerServer",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.17.1",
+    "open": "^7.0.3",
+    "socket.io": "^2.3.0"
+  }
+}
