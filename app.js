@@ -59,7 +59,7 @@ io.on('connection', function(socket){
 
 
   socket.on('login', (data)=>{
-    console.log("User loggedIn", data.name);
+    console.log("User loggedIn", data);
     // check if user already exist, fail if it does
     if(sockets[data.name]) {
         socket.emit('login', {
@@ -69,10 +69,13 @@ io.on('connection', function(socket){
       } else {
          //save user connection on the server
          var templist = users;
+         console.log('templist', templist)
          // saves the socket connection to socket object
          sockets[data.name] = socket;
          // adding name to socket connection
          socket.name = data.name;
+         socket.emit('updateUserList', templist);
+
          socket.emit('login', {
             type: "login",
             success: true,
