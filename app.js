@@ -60,8 +60,6 @@ io.on("connection", function (socket) {
   });
 
   socket.on("login", (data) => {
-    // console.log("User loggedIn", data);
-
     const existingUser = activeUser.find(
       (existingUser) => existingUser.roomId === data.roomId
     );
@@ -71,38 +69,26 @@ io.on("connection", function (socket) {
       const addUser = activeUser.filter(
         (existing) => existing.roomId !== data.roomId
       );
-      // console.log(addUser, "addUser");
-      socket.emit("updateUserList", addUser);
-    }
 
-    // check if user already exist, fail if it does
+      socket.emit("updateUserList", addUser);
+      socket.broadcast.emit("updateUserList", addUser);
+    }
     if (sockets[data.name]) {
       socket.emit("login", {
         type: "login",
         success: false,
       });
     } else {
-      //save user connection on the server
-
-      // saves the socket connection to socket object
       sockets[data.name] = socket;
-      // adding name to socket connection
       socket.name = data.name;
-
-      socket.emit("login", {
-        type: "login",
-        success: true,
-        username: data.name,
-      });
+      socket.roomId = data.roomId;
       socket.broadcast
         .to("chatroom")
         .emit("roommessage", { type: "login", username: data.name });
       socket.join(data.roomId);
-      // eg {userA: "LvUal-89gmGJCLRIAAAC", userb: "qkFEHHv7cfb3MH8wAAAA"}
       users[data.name] = socket.id;
     }
   });
-
 
   socket.on("call_disconnected", (data) => {
     if (sockets[data.name]) {
@@ -113,32 +99,24 @@ io.on("connection", function (socket) {
   });
 
   socket.on("call_user", (data) => {
-    // chek if user u calling exist
-
-    // console.log(sockets, 'sockets[data.name]')
-
-    // if (sockets[data.callername]) {
-      console.log("user called");
-      console.log(data.name);
-      console.log(data.callername);
-      console.log(data.videoId);
-      // // emiting to d user who u calling
+    console.log(data, "data");
+    if (sockets[data.name]) {
       sockets[data.name].emit("answer", {
         type: "answer",
         name: data.name,
         roomId: data.videoId,
+        offer: data.offer,
       });
-    // } else {
-      // socket.emit("call_response", {
-      //   type: "call_response",
-      //   response: "offline",
-      //   name: data.name,
-      // });
-    // }
+    } else {
+      socket.emit("call_response", {
+        type: "call_response",
+        response: "offline",
+        name: data.name,
+      });
+    }
   });
 
   socket.on("call_accepted", (data) => {
-    // send to d person calling
     sockets[data.callername].emit("call_response", {
       type: "call_response",
       response: "accepted",
@@ -155,7 +133,6 @@ io.on("connection", function (socket) {
   });
 
   socket.on("call_rejected", (data) => {
-    // send to d person calling
     sockets[data.callername].emit("call_response", {
       type: "call_response",
       response: "rejected",
