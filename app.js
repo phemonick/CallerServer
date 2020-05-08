@@ -7,7 +7,7 @@ var io = require("socket.io")(server);
 
 var sockets = {};
 var users = {};
-const activeUser = [];
+let activeUser = [];
 
 function sendTo(connection, message) {
   connection.send(message);
@@ -34,12 +34,17 @@ io.on("connection", function (socket) {
   console.log("user connected");
 
   socket.on("disconnect", function () {
-    console.log("user disconnected");
+    const gone = activeUser.filter((x) => x.roomId === socket.roomId);
     if (socket.name) {
       socket.broadcast
         .to("chatroom")
         .emit("roommessage", { type: "disconnect", username: socket.name });
+      activeUser.filter(user => user.roomId !== gone.roomId);
+      socket.emit("removeUser", gone);
+      socket.broadcast.emit("removeUser", gone);
+      console.log("user disconnected", socket.name, socket.roomId);
       delete sockets[socket.name];
+      delete sockets[socket.roomId];
       delete users[socket.name];
     }
   });
@@ -60,19 +65,6 @@ io.on("connection", function (socket) {
   });
 
   socket.on("login", (data) => {
-    const existingUser = activeUser.find(
-      (existingUser) => existingUser.roomId === data.roomId
-    );
-
-    if (!existingUser) {
-      activeUser.push(data);
-      const addUser = activeUser.filter(
-        (existing) => existing.roomId !== data.roomId
-      );
-
-      socket.emit("updateUserList", addUser);
-      socket.broadcast.emit("updateUserList", addUser);
-    }
     if (sockets[data.name]) {
       socket.emit("login", {
         type: "login",
@@ -82,6 +74,18 @@ io.on("connection", function (socket) {
       sockets[data.name] = socket;
       socket.name = data.name;
       socket.roomId = data.roomId;
+      const existingUser = activeUser.find(
+        (existing) => existing.roomId === data.roomId
+      );
+      if (!existingUser) {
+        activeUser.push(data);
+        const addUser = activeUser.filter(
+          (check) => check.roomId !== data.roomId
+        );
+        console.log(addUser, "addUser");
+        socket.emit("updateUserList", addUser);
+        socket.broadcast.emit("updateUserList", addUser);
+      }
       socket.broadcast
         .to("chatroom")
         .emit("roommessage", { type: "login", username: data.name });
@@ -93,18 +97,19 @@ io.on("connection", function (socket) {
   socket.on("call_disconnected", (data) => {
     if (sockets[data.name]) {
       sockets[data.name].emit("call_disconnected", {
-        callername: data.name,
+        callername: data,
       });
     }
   });
 
   socket.on("call_user", (data) => {
     console.log(data, "data");
-    if (sockets[data.name]) {
-      sockets[data.name].emit("answer", {
+    console.log(socket.name)
+    if (sockets[data.roomId]) {
+      sockets[data.roomId].emit("answer", {
         type: "answer",
         name: data.name,
-        roomId: data.videoId,
+        roomId: data.roomId,
         offer: data.offer,
       });
     } else {
