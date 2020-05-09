@@ -12,6 +12,7 @@ let activeUser = [];
 function sendTo(connection, message) {
   connection.send(message);
 }
+
 function socketIdsInRoom(name) {
   var socketIds = io.nsps["/"].adapter.rooms[name];
   if (socketIds) {
@@ -39,10 +40,10 @@ io.on("connection", function (socket) {
       socket.broadcast
         .to("chatroom")
         .emit("roommessage", { type: "disconnect", username: socket.name });
-      activeUser.filter(user => user.roomId !== gone.roomId);
+      activeUser.filter((user) => user.roomId !== gone.roomId);
       socket.emit("removeUser", gone);
       socket.broadcast.emit("removeUser", gone);
-      console.log("user disconnected", socket.name, socket.roomId);
+      console.log("user disconnected", socket.name, socket.name);
       delete sockets[socket.name];
       delete sockets[socket.roomId];
       delete users[socket.name];
@@ -89,7 +90,7 @@ io.on("connection", function (socket) {
       socket.broadcast
         .to("chatroom")
         .emit("roommessage", { type: "login", username: data.name });
-      socket.join(data.roomId);
+      socket.join(data.name);
       users[data.name] = socket.id;
     }
   });
@@ -97,16 +98,16 @@ io.on("connection", function (socket) {
   socket.on("call_disconnected", (data) => {
     if (sockets[data.name]) {
       sockets[data.name].emit("call_disconnected", {
-        callername: data,
+        callername: data.name
       });
     }
   });
 
   socket.on("call_user", (data) => {
     console.log(data, "data");
-    console.log(socket.name)
-    if (sockets[data.roomId]) {
-      sockets[data.roomId].emit("answer", {
+    console.log(socket.roomId);
+    if (sockets[data.name]) {
+      sockets[data.name].emit("answer", {
         type: "answer",
         name: data.name,
         roomId: data.roomId,
@@ -126,6 +127,7 @@ io.on("connection", function (socket) {
       type: "call_response",
       response: "accepted",
       responsefrom: data.from,
+      answer: data.answer,
     });
   });
 
