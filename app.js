@@ -79,7 +79,10 @@ io.on('connection', function(socket){
             username: data.name,
             userlist: templist
          })
-         socket.broadcast.to("chatroom").emit('roommessage',{ type: "login", username: data.name})
+         console.log(data)
+         socket.broadcast.emit('roommessage',{ type: "login", data})
+        //  socket.broadcast.to("chatroom").emit('roommessage',{ type: "login", username: data.name})
+
          socket.join(data.roomId);
          // eg {userA: "LvUal-89gmGJCLRIAAAC", userb: "qkFEHHv7cfb3MH8wAAAA"}
          users[data.name] = socket.id
@@ -107,9 +110,13 @@ io.on('connection', function(socket){
           console.log(data.videoId);
           // emiting to d user who u calling
           sockets[data.name].emit( 'answer', {
-           type: "answer",
-           callername: data.callername,
-           videoId: data.videoId
+          //  type: "answer",
+          //  callername: data.callername,
+          //  videoId: data.videoId
+            type: "answer",
+            name: data.name,
+            roomId: data.roomId,
+            offer: data.offer,
         });
       }else{
         socket.emit('call_response', {
@@ -123,9 +130,13 @@ io.on('connection', function(socket){
   socket.on('call_accepted', (data)=>{
     // send to d person calling
     sockets[data.callername].emit('call_response', {
-         type: "call_response",
-         response: "accepted",
-         responsefrom : data.from
+        //  type: "call_response",
+        //  response: "accepted",
+        //  responsefrom : data.from
+          type: "call_response",
+          response: "accepted",
+          responsefrom: data.from,
+          answer: data.answer,
       } )
   })
 
